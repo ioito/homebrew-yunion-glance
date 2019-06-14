@@ -1,5 +1,5 @@
 class YunionGlance < Formula
-  desc "Yunion Cloud Image Service"
+  desc "Yunion Cloud Glance Registry server"
   homepage "https://github.com/yunionio/onecloud.git"
   url "https://github.com/yunionio/onecloud.git",
     :tag      => "release/2.10.0"
@@ -29,33 +29,46 @@ class YunionGlance < Formula
   def glance_conf; <<~EOS
   region = 'Yunion'
   address = '0.0.0.0'
-  port = 8888
-  auth_uri = 'https://127.0.0.0:35357/v3'
-  admin_user = 'username'
-  admin_password = 'password'
-  admin_tenant_name = 'system'
-  sql_connection = 'mysql+pymysql://yunioncloud:zfgkhjGZusg1InyS@10.168.222.209:3306/yunioncloud?charset=utf8'
-  dns_server = '114.114.114.114'
-  dns_domain = 'yunion.local'
-  dns_resolvers = ['114.114.114.114']
+  port = 9292
 
-  scheduler_port = 8897
+  auth_uri = 'http://127.0.0.1:35357/v3'
+  admin_user = 'sysadmin'
+  admin_password = 'sysadmin'
+  admin_project = 'system'
 
-  ignore_nonrunning_guests = True
+  sql_connection = 'mysql+pymysql://root:password@127.0.0.1:3306/glance?charset=utf8'
 
-  # convert_hypervisor_default_template = ''
+  filesystem_store_datadir = '/opt/cloud/workspace/data/glance/images'
+  torrent_store_dir = '/opt/cloud/workspace/data/glance/torrents'
 
-  port_v2 = 8889
+  auto_sync_table = true
 
-  log_level = 'debug'
-  auto_sync_table = True
 
-  enable_ssl = True
-  ssl_certfile = '/opt/yunionsetup/config/keys/region/region-full.crt'
-  ssl_keyfile = '/opt/yunionsetup/config/keys/region/region.key'
-  ssl_ca_certs = '/opt/yunionsetup/config/keys/region/ca.crt'
+  enable_ssl = false
+  ssl_certfile = '/opt/yunionsetup/config/keys/glance/glance-full.crt'
+  ssl_keyfile = '/opt/yunionsetup/config/keys/glance/glance.key'
   EOS
   end
+
+  def caveats; <<~EOS
+    Change #{etc}/glance.conf sql_connection options and create glance database
+    brew services start yunion-glance
+    source #{etc}/keystone/config/rc_admin
+    climc service-create --enabled image glance
+    climc endpoint-create --enabled glance Yunion public http://127.0.0.1:9292
+    climc endpoint-create --enabled glance Yunion internal http://127.0.0.1:9292
+    climc endpoint-create --enabled glance Yunion admin http://127.0.0.1:9292
+
+    climc service-create torrent-tracker torrent-tracker
+    climc endpoint-create torrent-tracker Yunion public https://tracker.yunion.cn
+    climc endpoint-create torrent-tracker Yunion internal https://tracker.yunion.cn
+
+    brew services restart yunion-yunionapi
+  EOS
+  end
+
+
+
 
   def plist; <<~EOS
     <?xml version="1.0" encoding="UTF-8"?>
@@ -71,7 +84,7 @@ class YunionGlance < Formula
       <key>ProgramArguments</key>
       <array>
         <string>#{opt_bin}/glance</string>
-        <string>--conf</string>
+        <string>--config</string>
         <string>#{etc}/glance.conf</string>
       </array>
       <key>WorkingDirectory</key>

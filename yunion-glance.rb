@@ -59,7 +59,7 @@ class YunionGlance < Formula
     climc endpoint-create --enabled glance Yunion internal http://127.0.0.1:9292
     climc endpoint-create --enabled glance Yunion admin http://127.0.0.1:9292
 
-    climc service-create torrent-tracker torrent-tracker
+    climc service-create --enabled torrent-tracker torrent-tracker
     climc endpoint-create torrent-tracker Yunion public https://tracker.yunion.cn
     climc endpoint-create torrent-tracker Yunion internal https://tracker.yunion.cn
 
